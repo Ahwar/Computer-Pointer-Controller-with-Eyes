@@ -24,20 +24,29 @@ class InputFeeder:
     def load_data(self):
         if self.input_type=='video':
             self.cap=cv2.VideoCapture(self.input_file)
+            return (self.cap.get(3), self.cap.get(4))
         elif self.input_type=='cam':
             self.cap=cv2.VideoCapture(0)
+            return (self.cap.get(3), self.cap.get(4))
         else:
             self.cap=cv2.imread(self.input_file)
+            return (self.cap.shape[1], self.cap.shape[0])
 
     def next_batch(self):
         '''
         Returns the next image from either a video file or webcam.
         If input_type is 'image', then it returns the same image.
         '''
-        while True:
-            for _ in range(10):
-                _, frame=self.cap.read()
-            yield frame
+        if self.input_type=='image':
+            yield True, self.cap
+        else:
+            while True:
+                # 10 specified below will return only every tenth Frame
+                # Change this value according to your need
+                # Change to 1 to not to skip any frame
+                for _ in range(10):
+                    ret, frame=self.cap.read()
+                yield ret, frame
 
 
     def close(self):
@@ -46,4 +55,5 @@ class InputFeeder:
         '''
         if not self.input_type=='image':
             self.cap.release()
+            cv2.destroyAllWindows()
 
