@@ -244,6 +244,7 @@ optional arguments:
                         suitable plugin for device specified (CPU by default)
 9.  `-pt` Probability threshold for face detections filtering(0.5 by
                         default)
+10.  `-pr` Set to True if you want to preview visualizations on person face.
 ## Benchmarks
 
 ### Model Loading Time

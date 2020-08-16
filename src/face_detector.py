@@ -82,7 +82,7 @@ class FaceDetector:
         # Start Async Inference Request
         infer_request_handle = self.exec_network.start_async(
             request_id=0, inputs={self.input_blob: input_img})
-        
+
         # wait for the output and return.
         if infer_request_handle.wait(-1) == 0:
             model_output = infer_request_handle.outputs[self.output_blob]
@@ -130,7 +130,7 @@ class FaceDetector:
                 (x_min, y_min) = (int(det[3] * image_w), int(det[4] * image_h))
                 (x_max, y_max) = (int(det[5] * image_w), int(det[6] * image_h))
                 cropped_face = image[y_min:y_max, x_min:x_max]
-            return cropped_face
+            return cropped_face, ((x_min, y_min), (x_max, y_max))
 
     def get_input_shape(self):
         """ Return the shape of the input layer """

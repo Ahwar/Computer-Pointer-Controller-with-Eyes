@@ -121,13 +121,11 @@ class LandmarkDetector:
 
         x_left_eye, y_left_eye = outputs[0][0][0][0], outputs[0][1][0][0]
         x_right_eye, y_right_eye = outputs[0][2][0][0], outputs[0][3][0][0]
-
-        left_eye = self.crop_eyes(x_left_eye, y_left_eye, image)
-        right_eye = self.crop_eyes(x_right_eye, y_right_eye, image)
-        # print(left_eye.shape, right_eye.shape)
-        # cv2.imwrite("left.png", left_eye)
-        # cv2.imwrite("right.png", right_eye)
-        return left_eye, right_eye
+        # make cropped eye and its coordinates
+        left_eye, left_coords = self.crop_eyes(x_left_eye, y_left_eye, image)
+        right_eye, right_coords = self.crop_eyes(x_right_eye, y_right_eye,
+                                                 image)
+        return left_eye, left_coords, right_eye, right_coords
 
     def crop_eyes(self, x_axis, y_axis, image):
         w, h = image.shape[1], image.shape[0]
@@ -137,7 +135,7 @@ class LandmarkDetector:
         y_max = int(y_axis * h) + 30
 
         cropped_eye = image[y_min:y_max, x_min:x_max]
-        return cropped_eye
+        return cropped_eye, ((x_min, y_min), (x_max, y_max))
 
     def get_input_shape(self):
         """ Return the shape of the input layer """

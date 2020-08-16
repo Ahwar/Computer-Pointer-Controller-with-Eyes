@@ -87,6 +87,11 @@ def build_argparser():
         default=0.5,
         help="Probability threshold for face detections filtering"
         "(0.5 by default)")
+    parser.add_argument(
+        "-pr",
+        "--preview",
+        action='store_true',
+        help="Use this flag if you want to preview visualizations on person face")
     return parser
 
 
@@ -192,8 +197,8 @@ def infer_on_stream(args):
         ### Detect Face in Frame
         output = face_detector.predict(frame)
         ## Crop Face
-        face = face_detector.preprocess_output(output, args.prob_threshold,
-                                               frame, initial_w, initial_h)
+        face, face_coords = face_detector.preprocess_output(
+            output, args.prob_threshold, frame, initial_w, initial_h)
 
         # skip frame if face not found
         if not np.any(face):
@@ -208,7 +213,7 @@ def infer_on_stream(args):
         landmarks = landmark_detector.predict(face)
         logger.info("Face Landmarks detected")
         ## Crop left and right Eye
-        left_eye, right_eye = landmark_detector.preprocess_output(
+        left_eye, left_eye_coords, right_eye, right_eye_coords = landmark_detector.preprocess_output(
             landmarks, face)
 
         ## Skip frame if any eye is not cropped correctly
@@ -223,6 +228,46 @@ def infer_on_stream(args):
         ## Get mouse coords (x, y)
         mouse_coords = gaze_estimator.preprocess_output(gaze, head_pose)
         logger.info("New mouse coordinates: {}".format(mouse_coords))
+        # Show Preview of input with drawn predictions
+        if (args.preview):
+            # function draw rectangel around eye
+            def rectange_eyes(frame, face_coords, eye_coords):
+                """Draw bounding box around Eye"""
+                eye_start = (
+                    (face_coords[0][0] + eye_coords[0][0]),  # x_min + x_min
+                    (face_coords[0][1] + eye_coords[0][1]))  # y_min _ y_min
+                eye_end = (
+                    (face_coords[0][0] + eye_coords[1][0]),  # x_min + x_max
+                    (face_coords[0][1] + eye_coords[1][1]))  # y_min + y_max
+
+                return cv2.rectangle(frame, eye_start, eye_end, (0, 0, 255), 2)
+
+            # draw box around face
+            image = cv2.rectangle(frame, face_coords[0], face_coords[1],
+                                  (0, 0, 255), 2)
+            # draw box around left eye
+            image = rectange_eyes(image, face_coords, left_eye_coords)
+            # draw box around right eye
+            image = rectange_eyes(image, face_coords, right_eye_coords)
+            # show head pose values on image
+            cv2.putText(
+                image,
+                "Head Pose: Yaw: {:.2f}, Pitch: {:.2f}, Roll: {:.2f}".format(
+                    head_pose["angle_y_fc"][0][0],
+                    head_pose["angle_y_fc"][0][0],
+                    head_pose["angle_y_fc"][0][0],
+                ), (40, 40), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 0), 1)
+            # show head pose values on image
+            cv2.putText(
+                image,
+                "Gaze: X-axis: {:.2f}, Y-axis: {:.2f}, Z-axis: {:.2f}".format(
+                    gaze[0][0], gaze[0][1], gaze[0][2]), (40, 70),
+                cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 0), 1)
+
+            cv2.imshow('Preview | press q to close', image)
+            # break loop if q is pressed on output window
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
         print("New mouse coordinates: {}\n\n".format(mouse_coords))
         ### Move Mouse
