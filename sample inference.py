@@ -7,12 +7,14 @@ import cv2
 import numpy as np
 
 ## download models
-# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.bin -o model/1/face-detection-retail-0004.bin
-# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.xml -o model/1/face-detection-retail-0004.xml
+# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.bin -o bin/models/1/face-detection-retail-0004.bin
+# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.xml -o bin/models/1/face-detection-retail-0004.xml
 
 core = ov.Core()
 
-compiled_model = core.compile_model(r"model\1\face-detection-retail-0004.xml", "AUTO")
+compiled_model = core.compile_model(
+    "bin/models/1/face-detection-retail-0004.xml", "AUTO"
+)
 
 infer_request = compiled_model.create_infer_request()
 
@@ -22,7 +24,7 @@ print(infer_request.get_output_tensor())
 
 ## read image and preprocessing
 # Read image
-img = cv2.imread(r"bin\face.png")
+img = cv2.imread("bin/face.png")
 # Resize image
 img = cv2.resize(img, (300, 300))
 # Convert to float32
