@@ -9,13 +9,13 @@ import logging
 from pathlib import Path
 from argparse import ArgumentParser
 
-from face_detector import FaceDetector
-from head_pose_estimator import HeadposeEstimator
-from landmark_detector import LandmarkDetector
-from gaze_estimator import GazeEstimator
-from input_feeder import InputFeeder
+from lib.face_detector import FaceDetector
+# from lib.head_pose_estimator import HeadposeEstimator
+# from lib.landmark_detector import LandmarkDetector
+# from lib.gaze_estimator import GazeEstimator
+from lib.input_feeder import InputFeeder
 
-from mouse_controller import MouseController
+# from lib.mouse_controller import MouseController
 import logging
 
 #Create and configure logger
@@ -45,18 +45,18 @@ def build_argparser():
                         help="Path to an xml file of Face Detection Model.")
     parser.add_argument("-ldm",
                         "--lmar_det_m",
-                        required=True,
+                        required=False,
                         type=str,
                         help="Path to an xml file of Landmark Detection model")
     parser.add_argument(
         "-hem",
         "--h_pose_m",
-        required=True,
+        required=False,
         type=str,
         help="Path to an xml file of Head Pose Estimation model.")
     parser.add_argument("-gem",
                         "--g_est_m",
-                        required=True,
+                        required=False,
                         type=str,
                         help="Path to an xml file of Gaze Estimation Model.")
     parser.add_argument("-i",
@@ -64,14 +64,6 @@ def build_argparser():
                         required=True,
                         type=str,
                         help="Path to image or video file")
-    parser.add_argument("-l",
-                        "--cpu_extension",
-                        required=False,
-                        type=str,
-                        default=None,
-                        help="MKLDNN (CPU)-targeted custom layers."
-                        "Absolute path to a shared library with the"
-                        "kernels impl.")
     parser.add_argument("-d",
                         "--device",
                         type=str,
@@ -116,7 +108,7 @@ def infer_on_stream(args):
     """
     # Check if all input files are present
     for _ in [
-            args.face_det_m, args.lmar_det_m, args.h_pose_m, args.g_est_m,
+            args.face_det_m,# args.lmar_det_m, args.h_pose_m, args.g_est_m,
             args.input
     ]:
         if not Path(_).is_file():
@@ -157,28 +149,27 @@ def infer_on_stream(args):
 
     ### Load All Models
     ## Load Face Detector Model
-    face_detector = FaceDetector(args.face_det_m, args.device,
-                                 args.cpu_extension)
+    face_detector = FaceDetector(args.face_det_m, args.device)
     face_detector.load_model()
 
     logger.info("Face Detection model loaded successfully")
     ## Load Headpose Estimator Model
-    headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device,
-                                           args.cpu_extension)
-    headpose_estimator.load_model()
-    logger.info("Headpose Estimator model loaded successfully")
+    # headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device,
+    #                                        args.cpu_extension)
+    # headpose_estimator.load_model()
+    # logger.info("Headpose Estimator model loaded successfully")
 
-    ## Load Landmark Detector Model
-    landmark_detector = LandmarkDetector(args.lmar_det_m, args.device,
-                                         args.cpu_extension)
-    landmark_detector.load_model()
-    logger.info("Landmark Detector model loaded successfully")
+    # ## Load Landmark Detector Model
+    # landmark_detector = LandmarkDetector(args.lmar_det_m, args.device,
+    #                                      args.cpu_extension)
+    # landmark_detector.load_model()
+    # logger.info("Landmark Detector model loaded successfully")
 
-    ## Load Gaze Estimation Model
-    gaze_estimator = GazeEstimator(args.g_est_m, args.device,
-                                   args.cpu_extension)
-    gaze_estimator.load_model()
-    logger.info("Gaze Estimation model loaded successfully")
+    # ## Load Gaze Estimation Model
+    # gaze_estimator = GazeEstimator(args.g_est_m, args.device,
+    #                                args.cpu_extension)
+    # gaze_estimator.load_model()
+    # logger.info("Gaze Estimation model loaded successfully")
     ### Initialize Input Feeder
     input_feeder = InputFeeder(input_type, args.input)
     (initial_w, initial_h) = input_feeder.load_data()
@@ -192,14 +183,15 @@ def infer_on_stream(args):
             break
         f_count += 1
         logger.info("Processing Frame: {}".format(f_count))
-        print("\nProcessing Frame: {}".format(f_count))
-
         ### Detect Face in Frame
         output = face_detector.predict(frame)
         ## Crop Face
-        face, face_coords = face_detector.preprocess_output(
+        face, face_coords = face_detector.postprocess_output(
             output, args.prob_threshold, frame, initial_w, initial_h)
-
+        if np.any(face):
+            cv2.imshow("face", face)
+            cv2.waitKey()
+            exit()
         # skip frame if face not found
         if not np.any(face):
             print("Face Not found in Frame\tSkipping Frame")
