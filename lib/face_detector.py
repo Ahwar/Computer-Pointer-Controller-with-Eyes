@@ -70,9 +70,8 @@ class FaceDetector:
         (b, c, h, w) = self.get_input_shape()
         image = cv2.resize(image, (w, h))
         image = np.transpose(image, (2, 0, 1))
-        image = image.reshape(b, c, h, w)
+        image = np.expand_dims(image, axis=0)
         image = image.astype(np.float32)
-        image = image / 255.0
 
         return image
 
@@ -81,19 +80,20 @@ class FaceDetector:
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
         """
+        maxi = 0
+        det = None
+        cropped_face = None
         for out in outputs[0][0]:
-            conf = out[2]
-            maxi = 0
-            det = None
-            cropped_face = None
+            conf = float(out[2])
             if conf > threshold and conf > maxi:
                 det = out
                 maxi = conf
-            if det is not None:
-                (x_min, y_min) = (int(det[3] * image_w), int(det[4] * image_h))
-                (x_max, y_max) = (int(det[5] * image_w), int(det[6] * image_h))
-                cropped_face = image[y_min:y_max, x_min:x_max]
+        if det is not None:
+            (x_min, y_min) = (int(det[3] * image_w), int(det[4] * image_h))
+            (x_max, y_max) = (int(det[5] * image_w), int(det[6] * image_h))
+            cropped_face = image[y_min:y_max, x_min:x_max]
             return cropped_face, ((x_min, y_min), (x_max, y_max))
+        return None, None
 
     def get_input_shape(self):
         """Return the shape of the input layer"""
@@ -101,10 +101,18 @@ class FaceDetector:
 
 
 if __name__ == "__main__":
-    detector = FaceDetector(r"bin\models\1\face-detection-retail-0004.xml")
+    detector = FaceDetector("bin/models/1/face-detection-retail-0004.xml")
     detector.load_model()
     image = cv2.imread("bin/face.png")
     print("Model Input shape:", detector.get_input_shape())
     print("image size", image.shape)
     output = detector.predict(image)
     print("Model Output:", output.shape)
+    cropped_face, face_coords = detector.postprocess_output(
+        output, 0.1, image, image.shape[1], image.shape[0]
+    )
+    if cropped_face is not None:
+        cv2.imshow("t", cropped_face)
+        cv2.waitKey()
+    else:
+        print("No face founded")
