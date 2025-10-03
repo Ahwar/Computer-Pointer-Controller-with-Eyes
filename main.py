@@ -10,8 +10,8 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 from lib.face_detector import FaceDetector
-# from lib.head_pose_estimator import HeadposeEstimator
-# from lib.landmark_detector import LandmarkDetector
+from lib.head_pose_estimator import HeadposeEstimator
+from lib.landmark_detector import LandmarkDetector
 # from lib.gaze_estimator import GazeEstimator
 from lib.input_feeder import InputFeeder
 
@@ -45,13 +45,13 @@ def build_argparser():
                         help="Path to an xml file of Face Detection Model.")
     parser.add_argument("-ldm",
                         "--lmar_det_m",
-                        required=False,
+                        required=True,
                         type=str,
                         help="Path to an xml file of Landmark Detection model")
     parser.add_argument(
         "-hem",
         "--h_pose_m",
-        required=False,
+        required=True,
         type=str,
         help="Path to an xml file of Head Pose Estimation model.")
     parser.add_argument("-gem",
@@ -153,17 +153,15 @@ def infer_on_stream(args):
     face_detector.load_model()
 
     logger.info("Face Detection model loaded successfully")
-    ## Load Headpose Estimator Model
-    # headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device,
-    #                                        args.cpu_extension)
-    # headpose_estimator.load_model()
-    # logger.info("Headpose Estimator model loaded successfully")
+    # Load Headpose Estimator Model
+    headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device)
+    headpose_estimator.load_model()
+    logger.info("Headpose Estimator model loaded successfully")
 
-    # ## Load Landmark Detector Model
-    # landmark_detector = LandmarkDetector(args.lmar_det_m, args.device,
-    #                                      args.cpu_extension)
-    # landmark_detector.load_model()
-    # logger.info("Landmark Detector model loaded successfully")
+    ## Load Landmark Detector Model
+    landmark_detector = LandmarkDetector(args.lmar_det_m, args.device)
+    landmark_detector.load_model()
+    logger.info("Landmark Detector model loaded successfully")
 
     # ## Load Gaze Estimation Model
     # gaze_estimator = GazeEstimator(args.g_est_m, args.device,
@@ -188,10 +186,6 @@ def infer_on_stream(args):
         ## Crop Face
         face, face_coords = face_detector.postprocess_output(
             output, args.prob_threshold, frame, initial_w, initial_h)
-        if np.any(face):
-            cv2.imshow("face", face)
-            cv2.waitKey()
-            exit()
         # skip frame if face not found
         if not np.any(face):
             print("Face Not found in Frame\tSkipping Frame")
@@ -205,7 +199,7 @@ def infer_on_stream(args):
         landmarks = landmark_detector.predict(face)
         logger.info("Face Landmarks detected")
         ## Crop left and right Eye
-        left_eye, left_eye_coords, right_eye, right_eye_coords = landmark_detector.preprocess_output(
+        left_eye, left_eye_coords, right_eye, right_eye_coords = landmark_detector.postprocess_output(
             landmarks, face)
 
         ## Skip frame if any eye is not cropped correctly
@@ -214,6 +208,7 @@ def infer_on_stream(args):
             logger.warning("Issue in Eye Cropping. \nSkipping this Frame ...")
             continue
         logger.info("Both Eyes cropped successfuly")
+        exit()
         ### Estimate Gaze
         gaze = gaze_estimator.predict(left_eye, right_eye, head_pose)
         logger.info("Gaze Estimated successfully")
