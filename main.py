@@ -15,7 +15,7 @@ from lib.landmark_detector import LandmarkDetector
 from lib.gaze_estimator import GazeEstimator
 from lib.input_feeder import InputFeeder
 
-# from lib.mouse_controller import MouseController
+from lib.mouse_controller import MouseController
 import logging
 
 #Create and configure logger
@@ -207,11 +207,10 @@ def infer_on_stream(args):
             logger.warning("Issue in Eye Cropping. \nSkipping this Frame ...")
             continue
         logger.info("Both Eyes cropped successfuly")
-        exit()
         ### Estimate Gaze
         gaze = gaze_estimator.predict(left_eye, right_eye, head_pose)
         logger.info("Gaze Estimated successfully")
-        break
+
         ## Get mouse coords (x, y)
         mouse_coords = gaze_estimator.preprocess_output(gaze, head_pose)
         logger.info("New mouse coordinates: {}".format(mouse_coords))
@@ -240,9 +239,9 @@ def infer_on_stream(args):
             cv2.putText(
                 image,
                 "Head Pose: Yaw: {:.2f}, Pitch: {:.2f}, Roll: {:.2f}".format(
-                    head_pose["angle_y_fc"][0][0],
-                    head_pose["angle_y_fc"][0][0],
-                    head_pose["angle_y_fc"][0][0],
+                    head_pose["yaw"],
+                    head_pose["pitch"],
+                    head_pose["role"],
                 ), (40, 40), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 0), 1)
             # show head pose values on image
             cv2.putText(
@@ -258,7 +257,7 @@ def infer_on_stream(args):
 
         print("New mouse coordinates: {}\n\n".format(mouse_coords))
         ### Move Mouse
-        mouse_controler = MouseController("medium", "medium")
+        mouse_controler = MouseController("medium", "fast")
         mouse_controler.move(mouse_coords[0], mouse_coords[1])
         # go to next frame
 

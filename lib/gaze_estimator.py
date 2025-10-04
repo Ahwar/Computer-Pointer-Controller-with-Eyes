@@ -112,7 +112,7 @@ class GazeEstimator:
         gaze_vector = outputs[0]
         mouse_cord = (0, 0)
         try:
-            angle_r_fc = hpe_cords["angle_r_fc"]
+            angle_r_fc = hpe_cords["role"]
             sin_r = math.sin(angle_r_fc * math.pi / 180.0)
             cos_r = math.cos(angle_r_fc * math.pi / 180.0)
             x = gaze_vector[0] * cos_r + gaze_vector[1] * sin_r
