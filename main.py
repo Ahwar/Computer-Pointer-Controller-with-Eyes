@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from lib.face_detector import FaceDetector
 from lib.head_pose_estimator import HeadposeEstimator
 from lib.landmark_detector import LandmarkDetector
-# from lib.gaze_estimator import GazeEstimator
+from lib.gaze_estimator import GazeEstimator
 from lib.input_feeder import InputFeeder
 
 # from lib.mouse_controller import MouseController
@@ -56,7 +56,7 @@ def build_argparser():
         help="Path to an xml file of Head Pose Estimation model.")
     parser.add_argument("-gem",
                         "--g_est_m",
-                        required=False,
+                        required=True,
                         type=str,
                         help="Path to an xml file of Gaze Estimation Model.")
     parser.add_argument("-i",
@@ -108,7 +108,7 @@ def infer_on_stream(args):
     """
     # Check if all input files are present
     for _ in [
-            args.face_det_m,# args.lmar_det_m, args.h_pose_m, args.g_est_m,
+            args.face_det_m, args.lmar_det_m, args.h_pose_m, args.g_est_m,
             args.input
     ]:
         if not Path(_).is_file():
@@ -163,11 +163,10 @@ def infer_on_stream(args):
     landmark_detector.load_model()
     logger.info("Landmark Detector model loaded successfully")
 
-    # ## Load Gaze Estimation Model
-    # gaze_estimator = GazeEstimator(args.g_est_m, args.device,
-    #                                args.cpu_extension)
-    # gaze_estimator.load_model()
-    # logger.info("Gaze Estimation model loaded successfully")
+    ## Load Gaze Estimation Model
+    gaze_estimator = GazeEstimator(args.g_est_m, args.device)
+    gaze_estimator.load_model()
+    logger.info("Gaze Estimation model loaded successfully")
     ### Initialize Input Feeder
     input_feeder = InputFeeder(input_type, args.input)
     (initial_w, initial_h) = input_feeder.load_data()
@@ -212,6 +211,7 @@ def infer_on_stream(args):
         ### Estimate Gaze
         gaze = gaze_estimator.predict(left_eye, right_eye, head_pose)
         logger.info("Gaze Estimated successfully")
+        break
         ## Get mouse coords (x, y)
         mouse_coords = gaze_estimator.preprocess_output(gaze, head_pose)
         logger.info("New mouse coordinates: {}".format(mouse_coords))
@@ -288,5 +288,5 @@ def main():
     logger.info("Every Thing Complete Exiting Program")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

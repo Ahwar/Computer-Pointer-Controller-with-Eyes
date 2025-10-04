@@ -48,6 +48,7 @@ class HeadposeEstimator:
         Returns:
             model_output (numpy.ndarray): Raw Model Output
         """
+        model_output = {}
         ### PreProcess input image according to model Requirement
         input_img = self.preprocess_input(image)
         input_tensor = ov.Tensor(input_img, shared_memory=False)
@@ -57,8 +58,9 @@ class HeadposeEstimator:
         self.infer_request.start_async()
         self.infer_request.wait()
 
-        model_output = self.infer_request.get_output_tensor(0).data
-
+        model_output["yaw"] = self.infer_request.get_output_tensor(0).data[0][0]
+        model_output["pitch"] = self.infer_request.get_output_tensor(1).data[0][0]
+        model_output["role"] = self.infer_request.get_output_tensor(2).data[0][0]
         return model_output
 
     def preprocess_input(self, image):

@@ -1,10 +1,7 @@
-import os
-import sys
 import cv2
-import math
 import numpy as np
-import logging as log
-from openvino.inference_engine import IECore
+import openvino as ov
+import math
 
 """
 This is a sample class for a model. You may choose to use it as-is or make any changes to it.
@@ -16,15 +13,12 @@ class GazeEstimator:
     Class for the Gaze Estimation Model.
     """
 
-    def __init__(self, model_name, device="CPU", extensions=None):
+    def __init__(self, model_name, device="CPU"):
         """Use this to set your instance variables."""
         self.core = None
-        self.network = None
-        self.output_blob = None
-        self.exec_network = None
+        self.compiled_model = None
         self.infer_request = None
         self.device = device
-        self.extenstions = extensions
         self.model_xml = model_name
 
     def load_model(self):
@@ -37,34 +31,12 @@ class GazeEstimator:
         Read model in to IENetwork and add any necessary Extension
         Check for Supported Layers
         """
-        self.model_weights = os.path.splitext(self.model_xml)[0] + ".bin"
         ### Load the model ###
         # Take model .xml and .bin file and create IENetwork
-        self.core = IECore()
-        self.network = self.core.read_network(
-            model=self.model_xml, weights=self.model_weights
-        )
+        self.core = ov.Core()
+        self.compiled_model = self.core.compile_model(self.model_xml, "AUTO")
 
-        ### Add any necessary extensions ###
-        try:
-            if self.extenstions and self.device == "CPU":
-                self.core.add_extension(
-                    extension_path=self.extenstions, device_name=self.device
-                )
-        except:
-            "Error in Loading {} Extension".format(self.device)
-
-        ### Check model for unsupported layers
-        self.check_model()
-
-        # retrieve name of model's output layer
-        self.output_blob = next(iter(self.network.outputs))
-
-        ### load IENetwork to Executable Network ###
-        ### Note: You may need to update the function parameters. ###
-        self.exec_network = self.core.load_network(
-            network=self.network, device_name=self.device, num_requests=1
-        )
+        self.infer_request = self.compiled_model.create_infer_request()
 
     def predict(self, left_eye, right_eye, head_pose):
         """
@@ -80,50 +52,40 @@ class GazeEstimator:
         ### PreProcess input image according to model Requirement
         left_eye = self.preprocess_input(left_eye)
         right_eye = self.preprocess_input(right_eye)
+        left_eye = ov.Tensor(array=left_eye, shared_memory=False)
+        right_eye = ov.Tensor(array=right_eye, shared_memory=False)
         ### run inference and return output
         # Start Async Inference Request
-        poses = [
+        poses = np.array(
             [
-                head_pose["angle_y_fc"][0][0],  # Estimated Head yaw (in degrees)
-                head_pose["angle_p_fc"][0][0],  # Estimated Head pitch (in degrees)
-                head_pose["angle_r_fc"][0][0],  # Estimated Head roll (in degrees)
-            ]
-        ]
+                [
+                    head_pose["yaw"],  # Estimated Head yaw (in degrees)
+                    head_pose["pitch"],  # Estimated Head pitch (in degrees)
+                    head_pose["role"],  # Estimated Head roll (in degrees)
+                ]
+            ],
+            dtype=np.float32,
+        )
+        poses = ov.Tensor(array=poses, shared_memory=False)
+        print("++++", poses.shape)
 
-        # print("aksdfjdskfajskdfjasdfk", v)
-        infer_request_handle = self.exec_network.start_async(
-            request_id=0,
-            # Input dictionary
-            inputs={
+        self.infer_request.set_input_tensors(
+            {
                 # image of left eye
-                "left_eye_image": left_eye,
+                0: left_eye,
                 # image of right eye
-                "right_eye_image": right_eye,
+                1: right_eye,
                 # head pose angles
-                "head_pose_angles": poses,
-            },
+                2: poses,
+            }
         )
-
-        # wait for the output and return.
-        if infer_request_handle.wait(-1) == 0:
-            model_output = infer_request_handle.outputs[self.output_blob]
-        return model_output
-
-    def check_model(self):
-        """Check for supported layers"""
-        layers_map = self.core.query_network(
-            network=self.network, device_name=self.device
-        )
-
-        unsupported_layers = [
-            l for l in self.network.layers.keys() if l not in layers_map
-        ]
-
-        if unsupported_layers != []:
-            sys.exit(
-                "Those mention layers in your model are not supported by OpenVino Inference Engine:"
-                " \n\t" + "\n\t".join(unsupported_layers)
-            )
+        # run inference
+        self.infer_request.start_async()
+        self.infer_request.wait()
+        # Get output tensor for model with one output
+        output = self.infer_request.get_output_tensor()
+        output_buffer = output.data
+        return output_buffer
 
     def preprocess_input(self, image):
         """
@@ -133,7 +95,8 @@ class GazeEstimator:
         (b, c, h, w) = self.get_input_shape()
         image = cv2.resize(image, (w, h))
         image = np.transpose(image, (2, 0, 1))
-        image = image.reshape(b, c, h, w)
+        image = np.expand_dims(image, axis=0)
+        image = image.astype(np.float32)
 
         return image
 
@@ -161,4 +124,4 @@ class GazeEstimator:
 
     def get_input_shape(self):
         """Return the shape of the input layer"""
-        return self.network.inputs["left_eye_image"].shape
+        return self.compiled_model.inputs[0].shape
