@@ -2,4 +2,4 @@ src/__pycache__
 main.log
 bin/models
 
-venv
+*.pyc

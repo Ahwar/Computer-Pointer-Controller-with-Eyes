@@ -9,13 +9,13 @@ import logging
 from pathlib import Path
 from argparse import ArgumentParser
 
-from face_detector import FaceDetector
-from head_pose_estimator import HeadposeEstimator
-from landmark_detector import LandmarkDetector
-from gaze_estimator import GazeEstimator
-from input_feeder import InputFeeder
+from lib.face_detector import FaceDetector
+from lib.head_pose_estimator import HeadposeEstimator
+from lib.landmark_detector import LandmarkDetector
+from lib.gaze_estimator import GazeEstimator
+from lib.input_feeder import InputFeeder
 
-from mouse_controller import MouseController
+from lib.mouse_controller import MouseController
 import logging
 
 #Create and configure logger
@@ -64,14 +64,6 @@ def build_argparser():
                         required=True,
                         type=str,
                         help="Path to image or video file")
-    parser.add_argument("-l",
-                        "--cpu_extension",
-                        required=False,
-                        type=str,
-                        default=None,
-                        help="MKLDNN (CPU)-targeted custom layers."
-                        "Absolute path to a shared library with the"
-                        "kernels impl.")
     parser.add_argument("-d",
                         "--device",
                         type=str,
@@ -157,26 +149,22 @@ def infer_on_stream(args):
 
     ### Load All Models
     ## Load Face Detector Model
-    face_detector = FaceDetector(args.face_det_m, args.device,
-                                 args.cpu_extension)
+    face_detector = FaceDetector(args.face_det_m, args.device)
     face_detector.load_model()
 
     logger.info("Face Detection model loaded successfully")
-    ## Load Headpose Estimator Model
-    headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device,
-                                           args.cpu_extension)
+    # Load Headpose Estimator Model
+    headpose_estimator = HeadposeEstimator(args.h_pose_m, args.device)
     headpose_estimator.load_model()
     logger.info("Headpose Estimator model loaded successfully")
 
     ## Load Landmark Detector Model
-    landmark_detector = LandmarkDetector(args.lmar_det_m, args.device,
-                                         args.cpu_extension)
+    landmark_detector = LandmarkDetector(args.lmar_det_m, args.device)
     landmark_detector.load_model()
     logger.info("Landmark Detector model loaded successfully")
 
     ## Load Gaze Estimation Model
-    gaze_estimator = GazeEstimator(args.g_est_m, args.device,
-                                   args.cpu_extension)
+    gaze_estimator = GazeEstimator(args.g_est_m, args.device)
     gaze_estimator.load_model()
     logger.info("Gaze Estimation model loaded successfully")
     ### Initialize Input Feeder
@@ -192,14 +180,11 @@ def infer_on_stream(args):
             break
         f_count += 1
         logger.info("Processing Frame: {}".format(f_count))
-        print("\nProcessing Frame: {}".format(f_count))
-
         ### Detect Face in Frame
         output = face_detector.predict(frame)
         ## Crop Face
-        face, face_coords = face_detector.preprocess_output(
+        face, face_coords = face_detector.postprocess_output(
             output, args.prob_threshold, frame, initial_w, initial_h)
-
         # skip frame if face not found
         if not np.any(face):
             print("Face Not found in Frame\tSkipping Frame")
@@ -213,7 +198,7 @@ def infer_on_stream(args):
         landmarks = landmark_detector.predict(face)
         logger.info("Face Landmarks detected")
         ## Crop left and right Eye
-        left_eye, left_eye_coords, right_eye, right_eye_coords = landmark_detector.preprocess_output(
+        left_eye, left_eye_coords, right_eye, right_eye_coords = landmark_detector.postprocess_output(
             landmarks, face)
 
         ## Skip frame if any eye is not cropped correctly
@@ -225,6 +210,7 @@ def infer_on_stream(args):
         ### Estimate Gaze
         gaze = gaze_estimator.predict(left_eye, right_eye, head_pose)
         logger.info("Gaze Estimated successfully")
+
         ## Get mouse coords (x, y)
         mouse_coords = gaze_estimator.preprocess_output(gaze, head_pose)
         logger.info("New mouse coordinates: {}".format(mouse_coords))
@@ -253,9 +239,9 @@ def infer_on_stream(args):
             cv2.putText(
                 image,
                 "Head Pose: Yaw: {:.2f}, Pitch: {:.2f}, Roll: {:.2f}".format(
-                    head_pose["angle_y_fc"][0][0],
-                    head_pose["angle_y_fc"][0][0],
-                    head_pose["angle_y_fc"][0][0],
+                    head_pose["yaw"],
+                    head_pose["pitch"],
+                    head_pose["role"],
                 ), (40, 40), cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 255, 0), 1)
             # show head pose values on image
             cv2.putText(
@@ -271,7 +257,7 @@ def infer_on_stream(args):
 
         print("New mouse coordinates: {}\n\n".format(mouse_coords))
         ### Move Mouse
-        mouse_controler = MouseController("medium", "medium")
+        mouse_controler = MouseController("medium", "fast")
         mouse_controler.move(mouse_coords[0], mouse_coords[1])
         # go to next frame
 
@@ -301,5 +287,5 @@ def main():
     logger.info("Every Thing Complete Exiting Program")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

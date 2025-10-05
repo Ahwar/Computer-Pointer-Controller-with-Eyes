@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: main.py with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "python": "D:/ahar/Computer-Pointer-Controller-with-Eyes/.venv/Scripts/python.exe",
+            "args": [
+                "-i",
+                "bin/face.png",
+                "-ftm",
+                "bin/models/face-detection-retail-0004.xml",
+                "-ldm",
+                "bin/models/landmarks_regression_retail_0009.xml",
+                "-hem",
+                "bin/models/head-pose-estimation-adas-0001.xml",
+                "-gem",
+                "bin/models/gaze-estimation-adas-0002.xml"
+            ]
+        }
+    ]
+}
