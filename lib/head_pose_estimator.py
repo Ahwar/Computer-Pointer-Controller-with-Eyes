@@ -1,7 +1,3 @@
-import cv2
-import numpy as np
-import openvino as ov
-
 from lib.CVModel import CVModel
 
 """
@@ -13,8 +9,6 @@ class HeadposeEstimator(CVModel):
     """
     Class for the Face Detection Model.
     """
-
-    
 
     def predict(self, image):
         """
@@ -33,4 +27,3 @@ class HeadposeEstimator(CVModel):
         model_output["pitch"] = self.infer_request.get_output_tensor(1).data[0][0]
         model_output["role"] = self.infer_request.get_output_tensor(2).data[0][0]
         return model_output
-

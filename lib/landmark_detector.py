@@ -21,7 +21,6 @@ class LandmarkDetector(CVModel):
 
         return model_output
 
-    
     def postprocess_output(self, outputs, image):
         """
         Before feeding the output of this model to the next model,
