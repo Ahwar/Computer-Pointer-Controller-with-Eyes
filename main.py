@@ -111,7 +111,7 @@ def infer_on_stream(args):
             args.face_det_m, args.lmar_det_m, args.h_pose_m, args.g_est_m,
             args.input
     ]:
-        if not Path(_).is_file():
+        if not Path(_).is_file() and str(_).upper() != "CAM":
             error_message = "This file is not Present: \"{}\" Check the file please".\
                   format(_)
             logger.error(error_message)
