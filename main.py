@@ -260,7 +260,6 @@ def infer_on_stream(args):
 
         print("New mouse coordinates: {}\n\n".format(mouse_coords))
         ### Move Mouse
-        mouse_controler = MouseController("medium", "fast")
         mouse_controler.move(mouse_coords[0], mouse_coords[1])
         # go to next frame
 

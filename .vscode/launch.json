@@ -13,7 +13,8 @@
             "python": "D:/ahar/Computer-Pointer-Controller-with-Eyes/.venv/Scripts/python.exe",
             "args": [
                 "-i",
-                "bin/face.png",
+                // "bin/face.png", // for single image
+                "CAM",
                 "-ftm",
                 "bin/models/face-detection-retail-0004.xml",
                 "-ldm",
