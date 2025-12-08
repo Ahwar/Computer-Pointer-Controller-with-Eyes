@@ -111,7 +111,7 @@ def infer_on_stream(args):
             args.face_det_m, args.lmar_det_m, args.h_pose_m, args.g_est_m,
             args.input
     ]:
-        if not Path(_).is_file():
+        if not Path(_).is_file() and str(_).upper() != "CAM":
             error_message = "This file is not Present: \"{}\" Check the file please".\
                   format(_)
             logger.error(error_message)
@@ -172,6 +172,9 @@ def infer_on_stream(args):
     (initial_w, initial_h) = input_feeder.load_data()
     logger.info("Input Feeder loaded successfully")
     f_count = 0
+    ### Move Mouse to the center
+    mouse_controler = MouseController("medium", "fast")
+    mouse_controler.move_to_center()
     ### Iterate through input file frame by frame
     ### see `InputFeeder.next_batch` method for more detail
     for ret, frame in input_feeder.next_batch():
@@ -238,7 +241,7 @@ def infer_on_stream(args):
             # show head pose values on image
             cv2.putText(
                 image,
-                "Head Pose: Yaw: {:.2f}, Pitch: {:.2f}, Roll: {:.2f}".format(
+                "Head Pose: Yaw: {:.2f}, Pitch: {:.2f}, Role: {:.2f}".format(
                     head_pose["yaw"],
                     head_pose["pitch"],
                     head_pose["role"],
@@ -257,7 +260,6 @@ def infer_on_stream(args):
 
         print("New mouse coordinates: {}\n\n".format(mouse_coords))
         ### Move Mouse
-        mouse_controler = MouseController("medium", "fast")
         mouse_controler.move(mouse_coords[0], mouse_coords[1])
         # go to next frame
 

@@ -7,9 +7,18 @@ import cv2
 import numpy as np
 
 ## download models
-# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.bin -o bin/models/1/face-detection-retail-0004.bin
-# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/face-detection-retail-0004/FP32/face-detection-retail-0004.xml -o bin/models/1/face-detection-retail-0004.xml
+# curl --create-dirs https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/face-detection-retail-0004/FP32/face-detection-retail-0004.xml -o bin/models/face-detection-retail-0004.xml
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/face-detection-retail-0004/FP32/face-detection-retail-0004.bin -o bin/models/face-detection-retail-0004.bin
 
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009.xml -o bin/models/landmarks_regression_retail_0009.xml
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/landmarks-regression-retail-0009/FP32/landmarks-regression-retail-0009.bin -o bin/models/landmarks_regression_retail_0009.bin
+
+
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001.xml -o bin/models/head-pose-estimation-adas-0001.xml
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/head-pose-estimation-adas-0001/FP32/head-pose-estimation-adas-0001.bin -o bin/models/head-pose-estimation-adas-0001.bin
+
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002.xml -o bin/models/gaze-estimation-adas-0002.xml
+# curl https://storage.openvinotoolkit.org/repositories/open_model_zoo/2023.0/models_bin/1/gaze-estimation-adas-0002/FP32/gaze-estimation-adas-0002.bin -o bin/models/gaze-estimation-adas-0002.bin
 core = ov.Core()
 
 compiled_model = core.compile_model(
@@ -41,7 +50,7 @@ img = np.expand_dims(img, axis=0)
 # Create tensor from external memory
 input_tensor = ov.Tensor(array=img, shared_memory=True)
 # Set input tensor for model with one input
-infer_request.set_input_tensor(input_tensor)
+infer_request.set_input_tensors(input_tensor)
 # run inference
 infer_request.start_async()
 infer_request.wait()
